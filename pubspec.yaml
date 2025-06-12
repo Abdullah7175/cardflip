@@ -38,6 +38,10 @@ dependencies:
 #  flame_audio: ^1.4.0  # For sound effects
   provider: ^6.0.5  # For state management
   shared_preferences: ^2.2.0 # For local storage
+#  firebase_core: latest
+#  firebase_auth: latest
+#  cloud_firestore: latest
+
 
 dev_dependencies:
   flutter_test:
