@@ -1,77 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:cardflip/game/game_controller.dart';
-import 'package:provider/provider.dart';
-
-class GameBoard extends StatelessWidget {
-  const GameBoard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final game = Provider.of<GameController>(context);
-
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.deepPurple, Colors.black],
-        ),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Image.asset('assets/coin.png', width: 30, height: 30),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${game.coins}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                if (game.gameOver)
-                  ElevatedButton(
-                    onPressed: () {
-                      game.resetGame();
-                    },
-                    child: const Text('Play Again'),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 0.7,
-                ),
-                itemCount: game.cards.length,
-                itemBuilder: (context, index) => AnimatedCard(
-                  key: ValueKey(game.cards[index].id), // Important for animations
-                  card: game.cards[index],
-                  onTap: () => game.flipCard(game.cards[index].id),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class AnimatedCard extends StatelessWidget {
   final CardModel card;
@@ -89,20 +19,43 @@ class AnimatedCard extends StatelessWidget {
       onTap: onTap,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 500),
-        transitionBuilder: (child, animation) {
-          return RotationTransition(
-            turns: Tween(begin: 0.5, end: 1.0).animate(animation),
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          final rotateAnim = Tween(begin: pi / 2, end: 0.0).animate(animation);
+          return AnimatedBuilder(
+            animation: rotateAnim,
+            child: child,
+            builder: (context, child) {
+              return Transform(
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateY(rotateAnim.value),
+                alignment: Alignment.center,
+                child: child,
+              );
+            },
           );
         },
         child: card.isRevealed
-            ? _buildCardFront(context)
-            : _buildCardBack(),
+            ? _CardFace(key: const ValueKey('front'), front: true, card: card)
+            : _CardFace(key: const ValueKey('back'), front: false, card: card),
       ),
     );
+  }
+}
+
+class _CardFace extends StatelessWidget {
+  final bool front;
+  final CardModel card;
+
+  const _CardFace({
+    required Key key,
+    required this.front,
+    required this.card,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return front ? _buildCardFront() : _buildCardBack();
   }
 
   Widget _buildCardBack() {
@@ -132,7 +85,7 @@ class AnimatedCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCardFront(BuildContext context) {
+  Widget _buildCardFront() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,

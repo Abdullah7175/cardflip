@@ -9,29 +9,39 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
   bool _isLoading = false;
+  bool _otpSent = false;
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _sendOtp() async {
+    if (_phoneController.text.isEmpty) return;
 
     setState(() => _isLoading = true);
+    await AuthService().sendOtp(_phoneController.text);
+    setState(() {
+      _isLoading = false;
+      _otpSent = true;
+    });
+  }
 
-    final success = await AuthService().loginWithEmail(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
+  Future<void> _verifyOtp() async {
+    if (_otpController.text.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    final verified = await AuthService().verifyOtp(
+      _phoneController.text,
+      _otpController.text,
     );
 
     setState(() => _isLoading = false);
 
-    if (success) {
+    if (verified) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Invalid credentials'),
+          content: const Text('Invalid OTP'),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -58,10 +68,14 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const FlutterLogo(size: 100),
+                Image.asset(
+                  'assets/logo.png', // Path to your logo image
+                  width: 150, // Adjust size as needed
+                  height: 150,
+                ),
                 const SizedBox(height: 32),
                 Text(
-                  'Flip Reveal',
+                  'Card Games',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -75,56 +89,44 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: _emailController,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: Icon(Icons.email),
-                            ),
-                            validator: (value) => value!.isEmpty ? 'Required' : null,
-                            keyboardType: TextInputType.emailAddress,
+                    child: Column(
+                      children: [
+                        Text(
+                          _otpSent ? 'Enter OTP' : 'Enter Phone Number',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: _phoneController,
+                          decoration: InputDecoration(
+                            labelText: 'Phone Number',
+                            prefixIcon: const Icon(Icons.phone),
+                            enabled: !_otpSent,
                           ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        if (_otpSent) ...[
                           const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _passwordController,
+                          TextField(
+                            controller: _otpController,
                             decoration: const InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: Icon(Icons.lock),
+                              labelText: 'OTP',
+                              prefixIcon: Icon(Icons.lock_outline),
                             ),
-                            validator: (value) => value!.isEmpty ? 'Required' : null,
-                            obscureText: true,
-                          ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: _isLoading
-                                ? const Center(child: CircularProgressIndicator())
-                                : ElevatedButton(
-                              onPressed: _login,
-                              child: const Text('Login'),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text("Don't have an account?"),
-                              TextButton(
-                                onPressed: () => Navigator.pushNamed(context, '/register'),
-                                child: const Text('Sign up'),
-                              ),
-                            ],
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pushNamed(context, '/otp'),
-                            child: const Text('Login with OTP'),
+                            keyboardType: TextInputType.number,
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: _isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : ElevatedButton(
+                            onPressed: _otpSent ? _verifyOtp : _sendOtp,
+                            child: Text(_otpSent ? 'Verify OTP' : 'Send OTP'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

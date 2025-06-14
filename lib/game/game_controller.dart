@@ -3,114 +3,92 @@ import 'dart:math';
 
 class GameController with ChangeNotifier {
   final bool isMultiplayer;
-  int coins = 100; // Starting coins
+  int coins = 1000;
   List<CardModel> cards = [];
   bool gameOver = false;
   int currentStreak = 0;
   final Random _random = Random();
+  bool _canFlip = true;
 
   GameController({required this.isMultiplayer}) {
     _initializeGame();
   }
 
   void _initializeGame() {
-    // Initialize 4x4 grid of cards
-    cards = List.generate(16, (index) => CardModel(
+    cards = List.generate(9, (index) => CardModel(
       id: index,
       isRevealed: false,
       value: _generateCardValue(),
     ));
-
     notifyListeners();
   }
 
   CardValue _generateCardValue() {
-    // 60% chance for coin reward, 30% for loss, 10% for special
     final random = _random.nextDouble();
 
-    if (random < 0.4) {
-      // Coin reward (varying amounts)
-      final amounts = [50, 100, 150, 200, 250];
-      return CardValue.coin(amounts[_random.nextInt(amounts.length)]);
-    } else if (random < 0.9) {
-      // Loss card
+    if (random < 0.5) {
+      return CardValue.coin(40 + _random.nextInt(260));
+    } else if (random < 0.85) {
       return CardValue.loss();
     } else {
-      // Special card
-      final types = [SpecialType.bonusFlip, SpecialType.multiplier, SpecialType.gallery];
-      return CardValue.special(types[_random.nextInt(types.length)]);
+      return CardValue.special(
+          SpecialType.values[_random.nextInt(SpecialType.values.length)],
+          100 + _random.nextInt(400)
+      );
     }
   }
 
-  void flipCard(int id) {
-    if (gameOver) return;
-
+  Future<void> flipCard(int id) async {
     final card = cards.firstWhere((c) => c.id == id);
     if (card.isRevealed) return;
 
-    // Deduct coins for flip
-    coins -= isMultiplayer ? 0 : 50; // Free flips in multiplayer (bet is already placed)
+    // Immediately update state to trigger animation
     card.isRevealed = true;
-
-    // Process card effect
-    _processCardEffect(card.value);
-
     notifyListeners();
+
+    // Process card effect after animation would complete
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _processCardEffect(card.value);
   }
 
-  void _processCardEffect(CardValue value) {
-    value.when(
-      coin: (amount) {
+  Future<void> _processCardEffect(CardValue value) async {
+    await value.when(
+      coin: (amount) async {
         coins += amount;
         currentStreak++;
-        _checkForBonus();
-      },
-      loss: () {
-        currentStreak = 0;
-        gameOver = true; // Game ends immediately on LOSE card
+        if (currentStreak >= 3) {
+          coins += 200;
+          currentStreak = 0;
+        }
         notifyListeners();
       },
-      special: (type) {
-        switch (type) {
-          case SpecialType.bonusFlip:
-          // Grant free flip
-            coins += 50; // Refund the flip cost
-            break;
-          case SpecialType.multiplier:
-          // Next reward is multiplied
-            break;
-          case SpecialType.gallery:
-          // Unlock gallery item
-            break;
-        }
+      loss: () async {
+        gameOver = true;
+        notifyListeners();
+        await Future.delayed(const Duration(seconds: 1));
+      },
+      special: (type, amount) async {
+        coins += amount;
+        notifyListeners();
+        await Future.delayed(const Duration(seconds: 1));
       },
     );
   }
 
-  void _checkForBonus() {
-    if (currentStreak >= 3) {
-      // Grant bonus
-      coins += 200;
-      currentStreak = 0;
-    }
-  }
-
   void resetGame() {
     gameOver = false;
+    currentStreak = 0;
     _initializeGame();
   }
 
   // Multiplayer methods
   void joinMatch(int betAmount) {
     coins -= betAmount;
-    // Would normally connect to matchmaking here
     notifyListeners();
   }
 
   void endMatch(bool isWinner, int pot) {
-    if (isWinner) {
-      coins += pot;
-    }
+    if (isWinner) coins += pot;
     gameOver = true;
     notifyListeners();
   }
@@ -132,24 +110,27 @@ class CardValue {
   final CardType type;
   final int? amount;
   final SpecialType? specialType;
+  final int? specialAmount;
 
   CardValue.coin(this.amount) :
         type = CardType.coin,
-        specialType = null;
+        specialType = null,
+        specialAmount = null;
 
   CardValue.loss() :
         type = CardType.loss,
         amount = null,
-        specialType = null;
+        specialType = null,
+        specialAmount = null;
 
-  CardValue.special(this.specialType) :
+  CardValue.special(this.specialType, this.specialAmount) :
         type = CardType.special,
         amount = null;
 
   T when<T>({
     required T Function(int amount) coin,
     required T Function() loss,
-    required T Function(SpecialType type) special,
+    required T Function(SpecialType type, int amount) special,
   }) {
     switch (type) {
       case CardType.coin:
@@ -157,7 +138,7 @@ class CardValue {
       case CardType.loss:
         return loss();
       case CardType.special:
-        return special(specialType!);
+        return special(specialType!, specialAmount!);
     }
   }
 }

@@ -38,9 +38,13 @@ dependencies:
 #  flame_audio: ^1.4.0  # For sound effects
   provider: ^6.0.5  # For state management
   shared_preferences: ^2.2.0 # For local storage
-#  firebase_core: latest
-#  firebase_auth: latest
-#  cloud_firestore: latest
+  firebase_core: ^2.15.1
+  firebase_auth: ^4.9.1
+  intl_phone_field: ^3.1.0
+  flutter_animate: ^4.1.1+1  # For animations
+  confetti: ^0.7.0
+  animations: ^2.0.7  # For better animations
+  simple_animations: ^5.0.0+2 # For celebration effects
 
 
 dev_dependencies:
@@ -61,6 +65,10 @@ dev_dependencies:
 flutter:
 
   assets:
+    - assets/bg.png
+    - assets/help.png
+    - assets/lobby_bg.jpg
+    - assets/wallet.png
     - assets/logo.png
     - assets/card_back.png
     - assets/coin.png

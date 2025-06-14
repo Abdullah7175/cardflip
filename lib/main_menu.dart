@@ -8,91 +8,138 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.deepPurple, Colors.black],
+        body: Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/bg.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Center(
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                    // Game Logo
+                    Image.asset('assets/logo.png', width: 200),
+
+                // Game Card
+                _buildGameCard(
+                  context,
+                  'Flip Reveal',
+                  'assets/card_back.png',
+                      () => Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 500),
+                      pageBuilder: (_, __, ___) => const GameScreen(),
+                      transitionsBuilder: (_, animation, __, child) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                      // Action Buttons
+                      Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildActionButton(
+                              'Wallet',
+                              'assets/wallet.png',
+                                  () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const WalletScreen()),
+                              ),
+                            ),
+                            const SizedBox(width: 30),
+                            _buildActionButton(
+                              'How to Play',
+                              'assets/help.png',
+                                  () => _showGuide(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                ),
+            ),
+        ),
+    );
+  }
+
+  Widget _buildGameCard(
+      BuildContext context, String title, String image, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 250,
+        height: 150,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          image: DecorationImage(
+            image: AssetImage(image),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.4),
+              BlendMode.darken,
+            ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.5),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
         ),
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset('assets/logo.png', height: 150),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: 200,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GameScreen(isMultiplayer: false),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Solo Mode'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: 200,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const GameScreen(isMultiplayer: true),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Multiplayer Mode'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: 200,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const WalletScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('My Wallet'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => _showGuide(context),
-                child: const Text('How to Play', style: TextStyle(color: Colors.white)),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(String text, String iconPath, VoidCallback onTap) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              image: DecorationImage(image: AssetImage(iconPath)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                blurRadius: 10.0,
+                color: Colors.purple,
+                offset: Offset(2.0, 2.0),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -100,6 +147,7 @@ class HomeScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: Colors.deepPurple[900],
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -109,23 +157,31 @@ class HomeScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'How to Play',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                'How to Play Flip Reveal',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Solo Mode:\n'
-                    '- Flip cards to reveal rewards or losses\n'
-                    '- Get coins for matching cards\n'
-                    '- Special cards give bonuses\n\n'
-                    'Multiplayer Mode:\n'
-                    '- Place a bet to join a match\n'
-                    '- Compete against another player\n'
-                    '- Winner takes the pot!',
-                style: TextStyle(fontSize: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '• Each flip costs 50 coins\n'
+                      '• Reveal cards to win coins and bonuses\n'
+                      '• Match special cards for bigger rewards\n'
+                      '• Avoid the LOSE card to keep playing\n'
+                      '• Build streaks for bonus rewards',
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
+                ),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                ),
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Got It!'),
               ),
